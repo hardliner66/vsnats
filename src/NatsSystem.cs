@@ -13,6 +13,52 @@ using NATS.Client;
 
 namespace VSNats
 {
+    public abstract class NatsEvent
+    {
+        public string EventName { get => this.GetType().Name.RemoveFromEnd("Event"); }
+    }
+
+    class StartEvent : NatsEvent
+    {
+    }
+
+    abstract class PlayerEvent : NatsEvent
+    {
+        public string PlayerName { get; private set; }
+        public PlayerEvent(string player_name)
+        {
+            PlayerName = player_name;
+        }
+    }
+
+    class PlayerJoinEvent : PlayerEvent
+    {
+        public PlayerJoinEvent(string player_name) : base(player_name)
+        {
+        }
+    }
+
+    class PlayerDisconnectEvent : PlayerEvent
+    {
+        public PlayerDisconnectEvent(string player_name) : base(player_name)
+        {
+        }
+    }
+
+    class PlayerChatEvent : PlayerEvent
+    {
+        public PlayerChatEvent(string player_name, int channel_id, string message, string data) : base(player_name)
+        {
+            ChannelId = channel_id;
+            Message = message;
+            Data = data;
+        }
+
+        public int ChannelId { get; private set; }
+        public string Message { get; private set; }
+        public string Data { get; private set; }
+    }
+
     /// <summary> Main system for the "VSNats" mod. </summary>
     public class NatsSystem : ModSystem
     {
@@ -46,9 +92,16 @@ namespace VSNats
                 config.Url = "nats://127.0.0.1:4222";
                 dirty = true;
             }
+
             if (string.IsNullOrWhiteSpace(config.ServerId))
             {
                 config.ServerId = System.Guid.NewGuid().ToString();
+                dirty = true;
+            }
+
+            if (string.IsNullOrWhiteSpace(config.NatsPrefix))
+            {
+                config.NatsPrefix = "vintage_story";
                 dirty = true;
             }
 
@@ -61,23 +114,24 @@ namespace VSNats
             opts.Url = config.Url;
             nats = new ConnectionFactory().CreateConnection(opts);
 
-            string SERVER_EVENTS = $"server.{config.ServerId}";
+            string SERVER_EVENTS = $"{config.NatsPrefix}.{config.ServerId}";
 
-            nats.Publish(SERVER_EVENTS, System.Text.Encoding.ASCII.GetBytes("{\"name\":\"start\"}"));
+            nats.PublishTyped(SERVER_EVENTS, new StartEvent());
 
             api.Event.PlayerJoin += (player) =>
             {
-                nats.Publish(SERVER_EVENTS, System.Text.Encoding.ASCII.GetBytes($"{{\"name\":\"player_join\", \"player_name\": \"{player.PlayerName}\" }}"));
+                nats.PublishTyped<PlayerJoinEvent>(SERVER_EVENTS, new PlayerJoinEvent(player.PlayerName));
             };
 
             api.Event.PlayerDisconnect += (player) =>
             {
-                nats.Publish(SERVER_EVENTS, System.Text.Encoding.ASCII.GetBytes($"{{\"name\":\"player_disconnect\", \"player_name\": \"{player.PlayerName}\" }}"));
+                nats.PublishTyped(SERVER_EVENTS, new PlayerDisconnectEvent(player.PlayerName));
             };
 
             api.Event.PlayerChat += (IServerPlayer player, int channelId, ref string message, ref string data, BoolRef consumed) =>
             {
-                nats.Publish(SERVER_EVENTS, System.Text.Encoding.ASCII.GetBytes($"{{\"name\":\"player_chat\", \"player_name\": \"{player.PlayerName}\", \"channel_id\": \"{channelId}\", \"message\": \"{message}\", \"data\": \"{data}\" }}"));
+                consumed.SetValue(false);
+                nats.PublishTyped(SERVER_EVENTS, new PlayerChatEvent(player.PlayerName, channelId, message, data));
             };
         }
     }
