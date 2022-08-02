@@ -1,0 +1,14 @@
+{
+	"type": "code",
+	"name": "VSNats",
+	"modid": "vsnats",
+	"version": "0.0.1",
+	
+	"description" : "Exposes events and APIs through nats",
+	"website": "https://github.com/hardliner66/vsnats",
+	"authors": [ "IAmHardliner" ],
+	
+	"dependencies": {
+		"game": "1.16.0"
+	}
+}
