@@ -1,5 +1,7 @@
 # Nats Connector for Vintage Story
 
+<H2 style="color: darkorange">‼️ ATTENTION: This project is currently alpha status. All APIs are subject to change ‼️</H2>
+
 ## Why?
 To connect multiple servers of course.
 

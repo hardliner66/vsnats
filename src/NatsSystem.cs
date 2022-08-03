@@ -114,24 +114,25 @@ namespace VSNats
             opts.Url = config.Url;
             nats = new ConnectionFactory().CreateConnection(opts);
 
-            string SERVER_EVENTS = $"{config.NatsPrefix}.{config.ServerId}";
+            string GLOBAL_EVENTS = $"{config.NatsPrefix}.{config.ServerId}";
+            string PLAYER_EVENTS = $"{GLOBAL_EVENTS}.player";
 
-            nats.PublishTyped(SERVER_EVENTS, new StartEvent());
+            nats.PublishTyped(GLOBAL_EVENTS, new StartEvent());
 
             api.Event.PlayerJoin += (player) =>
             {
-                nats.PublishTyped<PlayerJoinEvent>(SERVER_EVENTS, new PlayerJoinEvent(player.PlayerName));
+                nats.PublishTyped<PlayerJoinEvent>(GLOBAL_EVENTS, new PlayerJoinEvent(player.PlayerName));
             };
 
             api.Event.PlayerDisconnect += (player) =>
             {
-                nats.PublishTyped(SERVER_EVENTS, new PlayerDisconnectEvent(player.PlayerName));
+                nats.PublishTyped(GLOBAL_EVENTS, new PlayerDisconnectEvent(player.PlayerName));
             };
 
             api.Event.PlayerChat += (IServerPlayer player, int channelId, ref string message, ref string data, BoolRef consumed) =>
             {
                 consumed.SetValue(false);
-                nats.PublishTyped(SERVER_EVENTS, new PlayerChatEvent(player.PlayerName, channelId, message, data));
+                nats.PublishTyped(GLOBAL_EVENTS, new PlayerChatEvent(player.PlayerName, channelId, message, data));
             };
         }
     }
