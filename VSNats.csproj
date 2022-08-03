@@ -1,5 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
+        <AssemblyTitle>VSNats</AssemblyTitle>
+        <Authors>iamhardliner</Authors>
+        <Version>0.6.5</Version>
+
+        <Description>Vintage Story mod which adds nats communication to the server</Description>
+        <RepositoryUrl>https://github.com/hardliner66/VSNats</RepositoryUrl>
 		<TargetFramework>net461</TargetFramework>
 		<LangVersion>latest</LangVersion>
 	</PropertyGroup>
