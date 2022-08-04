@@ -20,7 +20,7 @@ namespace VSNats
         public string EventName { get => this.GetType().Name.RemoveFromEnd("Event"); }
     }
 
-    class StartEvent : NatsEvent
+    class ServerStartedEvent : NatsEvent
     {
     }
 
@@ -228,82 +228,88 @@ namespace VSNats
             opts.Url = config.Url;
             nats = new ConnectionFactory().CreateConnection(opts);
 
-            string GLOBAL_EVENTS = $"{config.NatsPrefix}.server.{config.ServerId}";
-            var GetPlayerSubject = (IPlayer player) => $"{GLOBAL_EVENTS}.player.{player.PlayerName}";
+            string GLOBAL_PREFIX = $"{config.NatsPrefix}.servers.{config.ServerId}"
+            string GLOBAL_EVENTS = $"{GLOBAL_PREFIX}.events";
+            var GetPlayerPrefix = (IPlayer player) => $"{GLOBAL_PREFIX}.players.{player.PlayerName}";
+            var GetPlayerEventSubject = (IPlayer player) => $"{GetPlayerPrefix(player)}.events";
 
-            nats.PublishTyped(GLOBAL_EVENTS, new StartEvent());
+            nats.PublishTyped(GLOBAL_EVENTS, new ServerStartedEvent());
 
             api.Event.PlayerChat += (IServerPlayer player, int channelId, ref string message, ref string data, BoolRef consumed) =>
             {
                 consumed.SetValue(false);
-                nats.PublishTyped(GetPlayerSubject(player), new PlayerChatEvent(channelId, message, data));
+                nats.PublishTyped(GetPlayerEventSubject(player), new PlayerChatEvent(channelId, message, data));
             };
 
             api.Event.PlayerCreate += (player) =>
             {
-                nats.PublishTyped(GetPlayerSubject(player), new PlayerCreateEvent());
+                nats.PublishTyped(GetPlayerEventSubject(player), new PlayerCreateEvent());
             };
 
             api.Event.PlayerDeath += (player, damageSource) =>
             {
-                nats.PublishTyped(GetPlayerSubject(player), new PlayerDeathEvent(damageSource));
+                nats.PublishTyped(GetPlayerEventSubject(player), new PlayerDeathEvent(damageSource));
             };
 
             api.Event.PlayerDisconnect += (player) =>
             {
-                nats.PublishTyped(GetPlayerSubject(player), new PlayerDisconnectEvent());
+                nats.PublishTyped(GetPlayerEventSubject(player), new PlayerDisconnectEvent());
             };
 
             api.Event.PlayerJoin += (player) =>
             {
-                nats.PublishTyped(GetPlayerSubject(player), new PlayerJoinEvent());
+                nats.PublishTyped(GetPlayerEventSubject(player), new PlayerJoinEvent());
             };
 
             api.Event.PlayerLeave += (player) =>
             {
-                nats.PublishTyped(GetPlayerSubject(player), new PlayerLeaveEvent());
+                nats.PublishTyped(GetPlayerEventSubject(player), new PlayerLeaveEvent());
             };
 
             api.Event.PlayerNowPlaying += (player) =>
             {
-                nats.PublishTyped(GetPlayerSubject(player), new PlayerNowPlayingEvent());
+                nats.PublishTyped(GetPlayerEventSubject(player), new PlayerNowPlayingEvent());
             };
 
             api.Event.PlayerRespawn += (player) =>
             {
-                nats.PublishTyped(GetPlayerSubject(player), new PlayerRespawnEvent());
+                nats.PublishTyped(GetPlayerEventSubject(player), new PlayerRespawnEvent());
             };
 
             api.Event.PlayerSwitchGameMode += (player) =>
             {
-                nats.PublishTyped(GetPlayerSubject(player), new PlayerSwitchGameModeEvent(player.WorldData.CurrentGameMode));
+                nats.PublishTyped(GetPlayerEventSubject(player), new PlayerSwitchGameModeEvent(player.WorldData.CurrentGameMode));
             };
 
             api.Event.OnPlayerInteractEntity += (Entity entity, IPlayer player, ItemSlot slot, Vec3d hitPosition, int mode, ref EnumHandling handling) =>
             {
                 handling = EnumHandling.PassThrough;
-                nats.PublishTyped(GetPlayerSubject(player), new OnPlayerInteractEntityEvent(entity, slot, hitPosition, mode));
+                nats.PublishTyped(GetPlayerEventSubject(player), new OnPlayerInteractEntityEvent(entity, slot, hitPosition, mode));
             };
 
             api.Event.BeforeActiveSlotChanged += (player, ev) =>
             {
-                nats.PublishTyped(GetPlayerSubject(player), new BeforeActiveSlotChangedEvent(ev));
+                nats.PublishTyped(GetPlayerEventSubject(player), new BeforeActiveSlotChangedEvent(ev));
                 return EnumHandling.PassThrough;
             };
 
             api.Event.AfterActiveSlotChanged += (player, ev) =>
             {
-                nats.PublishTyped(GetPlayerSubject(player), new AfterActiveSlotChangedEvent(ev));
+                nats.PublishTyped(GetPlayerEventSubject(player), new AfterActiveSlotChangedEvent(ev));
             };
 
             api.Event.DidBreakBlock += (player, oldblockId, blockSelection) =>
             {
-                nats.PublishTyped(GetPlayerSubject(player), new DidBreakBlockEvent(oldblockId, blockSelection));
+                nats.PublishTyped(GetPlayerEventSubject(player), new DidBreakBlockEvent(oldblockId, blockSelection));
             };
 
             api.Event.DidUseBlock += (player, blockSelection) =>
             {
-                nats.PublishTyped(GetPlayerSubject(player), new DidUseBlockEvent(blockSelection));
+                nats.PublishTyped(GetPlayerEventSubject(player), new DidUseBlockEvent(blockSelection));
+            };
+
+            api.Event.DidPlaceBlock += (player, oldblockId, blockSelection, withItemStack) => {
+                nats.PublishTyped(GetPlayerEventSubject(player), new DidPlaceBlockEvent(oldblockId, blockSelection, withItemStack));
             };
 
             api.Event.SaveGameLoaded += () =>
@@ -330,10 +336,6 @@ namespace VSNats
             api.Event.ServerResume += () =>
             {
                 nats.PublishTyped(GLOBAL_EVENTS, new ServerResumeEvent());
-            };
-
-            api.Event.DidPlaceBlock += (player, oldblockId, blockSelection, withItemStack) => {
-                nats.PublishTyped(GetPlayerSubject(player), new DidPlaceBlockEvent(oldblockId, blockSelection, withItemStack));
             };
 
             // crashes the server
