@@ -228,7 +228,7 @@ namespace VSNats
             opts.Url = config.Url;
             nats = new ConnectionFactory().CreateConnection(opts);
 
-            string GLOBAL_PREFIX = $"{config.NatsPrefix}.servers.{config.ServerId}"
+            string GLOBAL_PREFIX = $"{config.NatsPrefix}.servers.{config.ServerId}";
             string GLOBAL_EVENTS = $"{GLOBAL_PREFIX}.events";
             var GetPlayerPrefix = (IPlayer player) => $"{GLOBAL_PREFIX}.players.{player.PlayerName}";
             var GetPlayerEventSubject = (IPlayer player) => $"{GetPlayerPrefix(player)}.events";
