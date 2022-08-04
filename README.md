@@ -33,7 +33,7 @@ $"{config.NatsPrefix}.servers.{config.ServerId}.events"
 - ServerResume
 
 ```csharp
-// Global Events
+// Player Events
 $"{config.NatsPrefix}.servers.{config.ServerId}.players.{player.PlayerName}.events"
 ```
 
