@@ -34,7 +34,7 @@ $"{config.NatsPrefix}.servers.{config.ServerId}.events"
 
 ```csharp
 // Global Events
-$"{GLOBAL_EVENTS}.players.{player.PlayerName}.events"
+$"{config.NatsPrefix}.servers.{config.ServerId}.players.{player.PlayerName}.events"
 ```
 
 - PlayerChat
