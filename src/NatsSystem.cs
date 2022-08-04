@@ -233,8 +233,6 @@ namespace VSNats
             var GetPlayerPrefix = (IPlayer player) => $"{GLOBAL_PREFIX}.players.{player.PlayerName}";
             var GetPlayerEventSubject = (IPlayer player) => $"{GetPlayerPrefix(player)}.events";
 
-            nats.PublishTyped(GLOBAL_EVENTS, new ServerStartedEvent());
-
             api.Event.PlayerChat += (IServerPlayer player, int channelId, ref string message, ref string data, BoolRef consumed) =>
             {
                 consumed.SetValue(false);
@@ -367,6 +365,8 @@ namespace VSNats
             // };
 
             // api.Event.MapRegionUnloaded += (mapCoord, region) => { };
+            
+            nats.PublishTyped(GLOBAL_EVENTS, new ServerStartedEvent());
         }
     }
 }
