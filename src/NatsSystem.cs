@@ -1,5 +1,6 @@
 using VSNats.Utility;
 using VSNats.Config;
+using VSNats.Events;
 using Vintagestory.API.Datastructures;
 using Vintagestory.API.Common;
 using Vintagestory.API.Server;
@@ -15,11 +16,6 @@ using NATS.Client;
 
 namespace VSNats
 {
-    public abstract class NatsEvent
-    {
-        public string EventName { get => this.GetType().Name.RemoveFromEnd("Event"); }
-    }
-
     class ServerStartedEvent : NatsEvent
     {
     }
@@ -34,6 +30,7 @@ namespace VSNats
 
     class PlayerChatEvent : NatsEvent
     {
+        public PlayerChatEvent() { }
         public PlayerChatEvent(int channel_id, string message, string data)
         {
             ChannelId = channel_id;
@@ -50,6 +47,7 @@ namespace VSNats
 
     class PlayerDeathEvent : NatsEvent
     {
+        public PlayerDeathEvent() { }
         public PlayerDeathEvent(DamageSource damageSource)
         {
             DamageSource = damageSource;
@@ -63,6 +61,7 @@ namespace VSNats
     class PlayerRespawnEvent : NatsEvent { }
     class PlayerSwitchGameModeEvent : NatsEvent
     {
+        public PlayerSwitchGameModeEvent() { }
         public PlayerSwitchGameModeEvent(EnumGameMode gameMode)
         {
             GameMode = gameMode;
@@ -72,6 +71,7 @@ namespace VSNats
 
     class OnPlayerInteractEntityEvent : NatsEvent
     {
+        public OnPlayerInteractEntityEvent() { }
         public OnPlayerInteractEntityEvent(Entity entity, ItemSlot slot, Vec3d hitPosition, int mode)
         {
             Entity = entity;
@@ -87,6 +87,7 @@ namespace VSNats
 
     class BeforeActiveSlotChangedEvent : NatsEvent
     {
+        public BeforeActiveSlotChangedEvent() { }
         public BeforeActiveSlotChangedEvent(ActiveSlotChangeEventArgs eventArgs)
         {
             EventArgs = eventArgs;
@@ -96,6 +97,7 @@ namespace VSNats
 
     class AfterActiveSlotChangedEvent : NatsEvent
     {
+        public AfterActiveSlotChangedEvent() { }
         public AfterActiveSlotChangedEvent(ActiveSlotChangeEventArgs eventArgs)
         {
             EventArgs = eventArgs;
@@ -113,64 +115,125 @@ namespace VSNats
 
     class ServerResumeEvent : NatsEvent { }
 
-    class DidPlaceBlockEvent : NatsEvent {
-        public DidPlaceBlockEvent(int oldblockId, BlockSelection blockSelection, ItemStack withItemStack) {
+    class DidPlaceBlockEvent : NatsEvent
+    {
+        public DidPlaceBlockEvent() { }
+        public DidPlaceBlockEvent(int oldblockId, BlockSelection blockSelection, ItemStack withItemStack)
+        {
             OldblockId = oldblockId;
-            BlockSelection = blockSelection;
+            BlockSelection = new BlockSelectionWrapper(blockSelection);
             WithItemStack = withItemStack;
         }
         public int OldblockId { get; private set; }
-        public BlockSelection BlockSelection { get; private set; }
+        public BlockSelectionWrapper BlockSelection { get; private set; }
         public ItemStack WithItemStack { get; private set; }
     }
 
-    class CanPlaceOrBreakBlockEvent : NatsEvent {
-        public CanPlaceOrBreakBlockEvent(BlockSelection blockSelection) {
-            BlockSelection = blockSelection;
+    class CanPlaceOrBreakBlockEvent : NatsEvent
+    {
+        public CanPlaceOrBreakBlockEvent() { }
+        public CanPlaceOrBreakBlockEvent(BlockSelection blockSelection)
+        {
+            BlockSelection = new BlockSelectionWrapper(blockSelection);
         }
-        public BlockSelection BlockSelection { get; private set; }
+        public BlockSelectionWrapper BlockSelection { get; private set; }
     }
 
-    class BreakBlockEvent : NatsEvent {
-        public BreakBlockEvent(BlockSelection blockSelection, float dropQuantityMultiplier) {
-            BlockSelection = blockSelection;
+    class BreakBlockEvent : NatsEvent
+    {
+        public BreakBlockEvent() { }
+        public BreakBlockEvent(BlockSelection blockSelection, float dropQuantityMultiplier)
+        {
+            BlockSelection = new BlockSelectionWrapper(blockSelection);
             DropQuantityMultiplier = dropQuantityMultiplier;
         }
-        public BlockSelection BlockSelection { get; private set; }
+        public BlockSelectionWrapper BlockSelection { get; private set; }
         public float DropQuantityMultiplier { get; private set; }
     }
 
     class DidBreakBlockEvent : NatsEvent
     {
+        public DidBreakBlockEvent() { }
         public DidBreakBlockEvent(int oldblockId, BlockSelection blockSelection)
         {
             OldblockId = oldblockId;
-            BlockSelection = blockSelection;
+            BlockSelection = new BlockSelectionWrapper(blockSelection);
         }
         public int OldblockId { get; private set; }
-        public BlockSelection BlockSelection { get; private set; }
+        public BlockSelectionWrapper BlockSelection { get; private set; }
     }
 
     class DidUseBlockEvent : NatsEvent
     {
+        public DidUseBlockEvent() { }
         public DidUseBlockEvent(BlockSelection blockSelection)
         {
-            BlockSelection = blockSelection;
+            BlockSelection = new BlockSelectionWrapper(blockSelection);
         }
-        public BlockSelection BlockSelection { get; private set; }
+        public BlockSelectionWrapper BlockSelection { get; private set; }
     }
 
-    class ChunkColumnLoadedEvent : NatsEvent { }
+    class ChunkColumnLoadedEvent : NatsEvent
+    {
+        public ChunkColumnLoadedEvent() { }
+        public ChunkColumnLoadedEvent(Vec2i chunkCoord, IWorldChunk[] chunks)
+        {
+            ChunkCoord = new Vec2iWrapper(chunkCoord);
+            // Chunks = chunks;
+        }
+        public Vec2iWrapper ChunkCoord { get; private set; }
+        // public IWorldChunk[] Chunks { get; private set; }
+    }
 
-    class ChunkColumnUnloadedEvent : NatsEvent { }
+    class ChunkColumnUnloadedEvent : NatsEvent
+    {
+        public ChunkColumnUnloadedEvent() { }
+        public ChunkColumnUnloadedEvent(Vec3i chunkCoord)
+        {
+            ChunkCoord = new Vec3iWrapper(chunkCoord);
+        }
+        public Vec3iWrapper ChunkCoord { get; private set; }
+    }
 
-    class MapRegionLoadedEvent : NatsEvent { }
+    class MapRegionLoadedEvent : NatsEvent
+    {
+        public MapRegionLoadedEvent() { }
+        public MapRegionLoadedEvent(Vec2i mapCoord, IMapRegion mapRegion)
+        {
+            MapCoord = new Vec2iWrapper(mapCoord);
+            // MapRegion = mapRegion;
+        }
+        public Vec2iWrapper MapCoord { get; private set; }
+        // public IMapRegion MapRegion { get; private set; }
+    }
 
     class ChunkColumnSnowUpdateEvent : NatsEvent { }
 
-    class OnTrySpawnEntityEvent : NatsEvent { }
+    class OnTrySpawnEntityEvent : NatsEvent
+    {
+        public OnTrySpawnEntityEvent() { }
+        public OnTrySpawnEntityEvent(EntityProperties properties, Vec3d spawnPosition, long herdId)
+        {
+            // Properties = properties;
+            SpawnPosition = new Vec3dWrapper(spawnPosition);
+            HerdId = herdId;
+        }
+        // public EntityProperties Properties { get; private set; }
+        public Vec3dWrapper SpawnPosition { get; private set; }
+        public long HerdId { get; private set; }
+    }
 
-    class MapRegionUnloadedEvent : NatsEvent { }
+    class MapRegionUnloadedEvent : NatsEvent
+    {
+        public MapRegionUnloadedEvent() { }
+        public MapRegionUnloadedEvent(Vec2i mapCoord, IMapRegion mapRegion)
+        {
+            MapCoord = new Vec2iWrapper(mapCoord);
+            // MapRegion = mapRegion;
+        }
+        public Vec2iWrapper MapCoord { get; private set; }
+        // public IMapRegion MapRegion { get; private set; }
+    }
 
     /// <summary> Main system for the "VSNats" mod. </summary>
     public class NatsSystem : ModSystem
@@ -228,9 +291,13 @@ namespace VSNats
             opts.Url = config.Url;
             nats = new ConnectionFactory().CreateConnection(opts);
 
-            string GLOBAL_PREFIX = $"{config.NatsPrefix}.servers.{config.ServerId}";
-            string GLOBAL_EVENTS = $"{GLOBAL_PREFIX}.events";
-            var GetPlayerPrefix = (IPlayer player) => $"{GLOBAL_PREFIX}.players.{player.PlayerName}";
+            string SERVER_PREFIX = $"{config.NatsPrefix}.servers";
+            string THIS_SERVER_PREFIX = $"{SERVER_PREFIX}.{config.ServerId}";
+            string PLAYER_PREFIX = $"{SERVER_PREFIX}.{config.ServerId}.players";
+            string SERVER_EVENTS = $"{SERVER_PREFIX}.{config.ServerId}.events";
+            string SERVER_SUBSCRIPTION = $"{SERVER_PREFIX}.*.events";
+            string PLAYER_SUBSCRIPTION = $"{SERVER_PREFIX}.*.players.*.events";
+            var GetPlayerPrefix = (IPlayer player) => $"{SERVER_PREFIX}.{config.ServerId}.players.{player.PlayerName}";
             var GetPlayerEventSubject = (IPlayer player) => $"{GetPlayerPrefix(player)}.events";
 
             api.Event.PlayerChat += (IServerPlayer player, int channelId, ref string message, ref string data, BoolRef consumed) =>
@@ -306,67 +373,94 @@ namespace VSNats
                 nats.PublishTyped(GetPlayerEventSubject(player), new DidUseBlockEvent(blockSelection));
             };
 
-            api.Event.DidPlaceBlock += (player, oldblockId, blockSelection, withItemStack) => {
+            api.Event.DidPlaceBlock += (player, oldblockId, blockSelection, withItemStack) =>
+            {
                 nats.PublishTyped(GetPlayerEventSubject(player), new DidPlaceBlockEvent(oldblockId, blockSelection, withItemStack));
             };
 
             api.Event.SaveGameLoaded += () =>
             {
-                nats.PublishTyped(GLOBAL_EVENTS, new SaveGameLoadedEvent());
+                nats.PublishTyped(SERVER_EVENTS, new SaveGameLoadedEvent());
             };
 
             api.Event.SaveGameCreated += () =>
             {
-                nats.PublishTyped(GLOBAL_EVENTS, new SaveGameCreatedEvent());
+                nats.PublishTyped(SERVER_EVENTS, new SaveGameCreatedEvent());
             };
 
             api.Event.GameWorldSave += () =>
             {
-                nats.PublishTyped(GLOBAL_EVENTS, new GameWorldSaveEvent());
+                nats.PublishTyped(SERVER_EVENTS, new GameWorldSaveEvent());
             };
 
             api.Event.ServerSuspend += () =>
             {
-                nats.PublishTyped(GLOBAL_EVENTS, new ServerSuspendEvent());
+                nats.PublishTyped(SERVER_EVENTS, new ServerSuspendEvent());
                 return EnumSuspendState.Ready;
             };
 
             api.Event.ServerResume += () =>
             {
-                nats.PublishTyped(GLOBAL_EVENTS, new ServerResumeEvent());
+                nats.PublishTyped(SERVER_EVENTS, new ServerResumeEvent());
             };
 
-            // crashes the server
-            // api.Event.CanPlaceOrBreakBlock += (player, blockSelection) =>
-            // {
-            //     nats.PublishTyped(GetPlayerSubject(player), new CanPlaceOrBreakBlockEvent(blockSelection));
-            //     // todo: check if returning true makes problems
-            //     return true;
-            // };
+            api.Event.CanPlaceOrBreakBlock += (player, blockSelection) =>
+            {
+                nats.PublishTyped(GetPlayerEventSubject(player), new CanPlaceOrBreakBlockEvent(blockSelection));
+                // todo: check if returning true makes problems
+                return true;
+            };
 
-            // crashes the server
-            // api.Event.BreakBlock += (IServerPlayer player, BlockSelection blockSelection, ref float dropQuantityMultiplier, ref EnumHandling handling) =>
-            // {
-            //     nats.PublishTyped(GetPlayerSubject(player), new BreakBlockEvent(blockSelection, dropQuantityMultiplier));
-            //     handling = EnumHandling.PassThrough;
-            // };
+            api.Event.BreakBlock += (IServerPlayer player, BlockSelection blockSelection, ref float dropQuantityMultiplier, ref EnumHandling handling) =>
+            {
+                nats.PublishTyped(GetPlayerEventSubject(player), new BreakBlockEvent(blockSelection, dropQuantityMultiplier));
+                handling = EnumHandling.PassThrough;
+            };
 
-            // api.Event.ChunkColumnLoaded += (chunkCoord, chunks) => { };
+            api.Event.ChunkColumnLoaded += (chunkCoord, chunks) =>
+            {
+                nats.PublishTyped(SERVER_EVENTS, new ChunkColumnLoadedEvent(chunkCoord, chunks));
+            };
 
-            // api.Event.ChunkColumnUnloaded += (chunkCoord) => { };
+            api.Event.ChunkColumnUnloaded += (chunkCoord) =>
+            {
+                nats.PublishTyped(SERVER_EVENTS, new ChunkColumnUnloadedEvent(chunkCoord));
+            };
 
-            // api.Event.MapRegionLoaded += (mapCoord, region) => { };
+            api.Event.MapRegionLoaded += (mapCoord, region) =>
+            {
+                nats.PublishTyped(SERVER_EVENTS, new MapRegionLoadedEvent(mapCoord, region));
+            };
 
             // api.Event.ChunkColumnSnowUpdate += (mapChunk, chunkX, chunkZ, chunks) => { };
 
-            // api.Event.OnTrySpawnEntity += (ref EntityProperties properties, Vec3d spawnPosition, long herdId) =>
-            // {
-            //     return true;
-            // };
+            api.Event.OnTrySpawnEntity += (ref EntityProperties properties, Vec3d spawnPosition, long herdId) =>
+            {
+                nats.PublishTyped(SERVER_EVENTS, new OnTrySpawnEntityEvent(properties, spawnPosition, herdId));
+                return true;
+            };
 
-            // api.Event.MapRegionUnloaded += (mapCoord, region) => { };
-            
-            nats.PublishTyped(GLOBAL_EVENTS, new ServerStartedEvent());
+            api.Event.MapRegionUnloaded += (mapCoord, region) =>
+            {
+                nats.PublishTyped(SERVER_EVENTS, new MapRegionUnloadedEvent(mapCoord, region));
+            };
+
+            nats.SubscribeAsync($"{PLAYER_SUBSCRIPTION}.PlayerChat", (a, message) =>
+            {
+                var msg = message.Message;
+                if (!msg.Subject.StartsWith(THIS_SERVER_PREFIX))
+                {
+                    var cut1 = msg.Subject.Replace($"{PLAYER_PREFIX}.", "");
+                    var player_name = cut1.Replace(".events.PlayerChat", "");
+                    var player = api.PlayerData.GetPlayerDataByLastKnownName(player_name);
+                    var ev_string = System.Text.Encoding.UTF8.GetString(msg.Data);
+                    var ev = Json.Net.JsonNet.Deserialize<PlayerChatEvent>(ev_string);
+
+                    api.SendMessageToGroup(ev.ChannelId, $"<font color=\"#03ff2d\"><strong>external </strong></font>{ev.Message}", EnumChatType.OthersMessage, ev.Data);
+                }
+            });
+
+            nats.PublishTyped(SERVER_EVENTS, new ServerStartedEvent());
         }
     }
 }

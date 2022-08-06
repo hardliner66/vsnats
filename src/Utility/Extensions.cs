@@ -4,6 +4,7 @@ using Vintagestory.API.Common;
 using Vintagestory.API.Common.Entities;
 using Vintagestory.API.Datastructures;
 using NATS.Client;
+using VSNats.Events;
 
 namespace VSNats.Utility
 {
@@ -31,9 +32,10 @@ namespace VSNats.Utility
             }
         }
 
-        public static void PublishTyped<T>(this IConnection nats, string subject, T msg)
+        public static void PublishTyped<T>(this IConnection nats, string subject, T msg) where T : NatsEvent
         {
-            nats.Publish(subject, System.Text.Encoding.UTF8.GetBytes(Json.Net.JsonNet.Serialize(msg)));
+            var event_name = typeof(T).Name.RemoveFromEnd("Event");
+            nats.Publish($"{subject}.{event_name}", System.Text.Encoding.UTF8.GetBytes(Json.Net.JsonNet.Serialize(msg)));
         }
 
 
