@@ -13,16 +13,22 @@ Download nats cli from https://github.com/nats-io/natscli.
 
 Start nats server in a terminal.
 
+## Setting up a cluster
+To create a cluster, check out the nats specific documentation:
+https://docs.nats.io/running-a-nats-service/configuration/clustering
+
+You should probably also check out the section on securing nats:
+https://docs.nats.io/running-a-nats-service/configuration/securing_nats
 
 ```sh
-nats subscribe "vintage_story.>"
+nats subscribe ">"
 ```
 
 Start the server with the mod loaded. This will create a GUID for the server and send events to the nats server.
 
-Currently the following events are sent:
+## API
+### Global Events
 ```csharp
-// Global Events
 $"{config.NatsPrefix}.servers.{config.ServerId}.events"
 ```
 - ServerStarted
@@ -31,12 +37,16 @@ $"{config.NatsPrefix}.servers.{config.ServerId}.events"
 - GameWorldSave
 - ServerSuspend
 - ServerResume
+- ChunkColumnLoaded
+- ChunkColumnUnloaded
+- MapRegionLoaded
+- OnTrySpawnEntity
+- MapRegionUnloaded
 
+### Player Events
 ```csharp
-// Player Events
 $"{config.NatsPrefix}.servers.{config.ServerId}.players.{player.PlayerName}.events"
 ```
-
 - PlayerChat
 - PlayerCreate
 - PlayerDeath
@@ -52,3 +62,26 @@ $"{config.NatsPrefix}.servers.{config.ServerId}.players.{player.PlayerName}.even
 - DidBreakBlock
 - DidUseBlock
 - DidPlaceBlock
+- CanPlaceOrBreakBlock
+- BreakBlock
+
+### Subscribed Events
+```csharp
+$"{config.NatsPrefix}.servers.{config.ServerId}.players.{player.PlayerName}.events."
+```
+- PlayerChat - print messages from other servers to chat
+
+### API
+```csharp
+// call for a specific server
+$"{config.NatsPrefix}.servers.{config.ServerId}.api."
+// call for all servers
+$"{config.NatsPrefix}.servers.ALL.api."
+```
+- chat_all msg
+
+e.g.:
+```sh
+# To send a message to all servers that are connected to a cluster:
+nats pub "vintage_story.servers.ALL.api.chat_all" "Hello World!"
+```

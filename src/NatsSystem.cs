@@ -7,6 +7,7 @@ using Vintagestory.API.Server;
 using Vintagestory.API.MathTools;
 using Vintagestory.API.Common.Entities;
 using NATS.Client;
+using System;
 
 [assembly: ModInfo("VSNats",
     Description = "Adds the capability to connect the server to a nats instance",
@@ -293,6 +294,9 @@ namespace VSNats
 
             string SERVER_PREFIX = $"{config.NatsPrefix}.servers";
             string THIS_SERVER_PREFIX = $"{SERVER_PREFIX}.{config.ServerId}";
+            string THIS_SERVER_API = $"{THIS_SERVER_PREFIX}.api";
+            string ALL_SERVERS_PREFIX = $"{SERVER_PREFIX}.ALL";
+            string ALL_SERVERS_API = $"{ALL_SERVERS_PREFIX}.api";
             string PLAYER_PREFIX = $"{SERVER_PREFIX}.{config.ServerId}.players";
             string SERVER_EVENTS = $"{SERVER_PREFIX}.{config.ServerId}.events";
             string SERVER_SUBSCRIPTION = $"{SERVER_PREFIX}.*.events";
@@ -450,15 +454,23 @@ namespace VSNats
                 var msg = message.Message;
                 if (!msg.Subject.StartsWith(THIS_SERVER_PREFIX))
                 {
-                    var cut1 = msg.Subject.Replace($"{PLAYER_PREFIX}.", "");
-                    var player_name = cut1.Replace(".events.PlayerChat", "");
-                    var player = api.PlayerData.GetPlayerDataByLastKnownName(player_name);
                     var ev_string = System.Text.Encoding.UTF8.GetString(msg.Data);
                     var ev = Json.Net.JsonNet.Deserialize<PlayerChatEvent>(ev_string);
 
                     api.SendMessageToGroup(ev.ChannelId, $"<font color=\"#03ff2d\"><strong>external </strong></font>{ev.Message}", EnumChatType.OthersMessage, ev.Data);
                 }
             });
+
+            EventHandler<MsgHandlerEventArgs> api_all_chat = (object sender, MsgHandlerEventArgs message) =>
+            {
+                var msg = message.Message;
+                var msg_string = System.Text.Encoding.UTF8.GetString(msg.Data);
+
+                api.SendMessageToGroup(0, $"<font color=\"#04127a\"><strong>Server: </strong></font>{msg_string}", EnumChatType.OthersMessage, "");
+            };
+
+            nats.SubscribeAsync($"{THIS_SERVER_API}.chat_all", api_all_chat);
+            nats.SubscribeAsync($"{ALL_SERVERS_API}.chat_all", api_all_chat);
 
             nats.PublishTyped(SERVER_EVENTS, new ServerStartedEvent());
         }
